@@ -73,5 +73,12 @@ class DVRouter (Entity):
 	def calculate(self,src,dst):
 		print "calculate ", src," ", dst
 		return
-		#for k,v in self.routing_table:   #check each connected
-		#	if dst in v.keys():
+		newEntry=(10000000000000,None)
+		for k,v in self.routing_table:   #check each connected component
+			if dst in v.keys():
+				new_distance=v[dst][0]+self.ip_to_port[k][1]
+				if new_distance<newEntry[0]:
+					newEntry=(new_distance,k)
+		if newEntry[1]==None:
+			return None		
+		return newEntry
