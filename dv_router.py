@@ -17,7 +17,7 @@ class DVRouter (Entity):
 		# Add your code here!
 		if isinstance(packet, RoutingUpdate):
 			self.update_routing_table(packet,port)
-			send_update()
+			#send_update()
 
 		elif isinstance(packet, DiscoveryPacket):
 			self.routing_table[self][packet.src] = (1, packet.src)
@@ -25,6 +25,7 @@ class DVRouter (Entity):
 			if(packet.is_link_up):
 				state="Added "
 				self.ip_to_port[packet.src]=(port,packet.latency)
+				self.send_update(packet.src,packet.latency,port)
 			else:
 				state="Removed "
 				self.ip_to_port[packet.src]=(port,None) #didn't use a really high number. 
@@ -41,7 +42,6 @@ class DVRouter (Entity):
 
 
   	def update_routing_table (self, packet, port):
-
 		pass
 
 	def port_for_packet(self, packet):
@@ -50,18 +50,21 @@ class DVRouter (Entity):
 		return port
 
 
-	def send_update(self):
-
+	def send_update(self,dst,distance,port):
+		p=RoutingUpdate()
+		p.add_destination(dst, distance)
+		self.send(p,port, True)
 		pass
 
 	def clean(self, switch):
+		del self.routing_table[switch]
 		for k,v in self.routing_table[self]:
 			if v[1]==switch:
 				self.routing_table[self][k]=(None,None)
 				self.calculate(self,k)
 		
-
-	def calculate(self,src,dest):
-		pass
-
-
+	def calculate(self,src,dst):
+		print "calculate ", src," ", dst
+		return
+		#for k,v in self.routing_table:   #check each connected
+		#	if dst in v.keys():
