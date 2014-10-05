@@ -18,6 +18,7 @@ class DVRouter (Entity):
 		if isinstance(packet, RoutingUpdate):
 			self.update_routing_table(packet,port)
 			send_update()
+
 		elif isinstance(packet, DiscoveryPacket):
 			self.routing_table[self][packet.src] = (1, packet.src)
 			state=""
@@ -27,9 +28,9 @@ class DVRouter (Entity):
 			else:
 				state="Removed "
 				self.ip_to_port[packet.src]=(port,None) #didn't use a really high number. 
+				self.clean(packet.src)
 
 			print state, packet.src, " to ", self , " table"
-			self.update_routing_table(packet,port)
 
 		elif isinstance(packet, Packet):
 			port = port_for_packet(packet)
@@ -40,6 +41,7 @@ class DVRouter (Entity):
 
 
   	def update_routing_table (self, packet, port):
+
 		pass
 
 	def port_for_packet(self, packet):
@@ -49,5 +51,17 @@ class DVRouter (Entity):
 
 
 	def send_update(self):
-		
+
 		pass
+
+	def clean(self, switch):
+		for k,v in self.routing_table[self]:
+			if v[1]==switch:
+				self.routing_table[self][k]=(None,None)
+				self.calculate(self,k)
+		
+
+	def calculate(self,src,dest):
+		pass
+
+
