@@ -41,8 +41,16 @@ class DVRouter (Entity):
 			pass
 
 
-  	def update_routing_table (self, packet, port):
-		pass
+	def update_routing_table (self, packet, port):
+		keys = packet.all_dests()
+		for key in keys:
+			new_dist = packet.get_distance(key) + self.routing_table[packet.src][key][0]
+			current_ip = self.routing_table[packet.src][key]
+			if packet.src is current_ip[1]: # if the sources are the same, then something along the path changed
+				current_ip = (new_dist, packet.src)
+			elif packet.src is not current_ip[1] and new_dist < current_ip[0]: # if the sources are different, then this becomes a choice between new path or current path
+				current_ip = (new_dist, packet.src)
+				self.ip_to_port[key] = port #also update the ip_to_port table to reflect the new port that should be used.
 
 	def port_for_packet(self, packet):
 		route=self.routing_table[self][packet.dst]
@@ -54,7 +62,6 @@ class DVRouter (Entity):
 		p=RoutingUpdate()
 		p.add_destination(dst, distance)
 		self.send(p,port, True)
-		pass
 
 	def clean(self, switch):
 		del self.routing_table[switch]
