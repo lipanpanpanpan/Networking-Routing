@@ -9,8 +9,8 @@ class DVRouter (Entity):
 		# Add your code here!
 		self.routing_table= {}
 		self.ip_to_port={}
-		self.routing_table[self] = {self:(0, 0)} #(distance, owner)
-		self.ip_to_port[self] = (None, 0)  #(port number, distance)
+		self.routing_table[self] = {self:(0, 0)} #dst->(distance, switch)
+		self.ip_to_port[self] = (None, 0)  #switch->(port number, distance)
 
 	def handle_rx (self, packet, port):
 		# Add your code here!
@@ -18,12 +18,19 @@ class DVRouter (Entity):
 			update_routing_table(packet,port)
 			send_update()
 		elif isinstance(packet, DiscoveryPacket):
-			self.routing_table[self][packet.src] = (1, port)
+			self.routing_table[self][packet.src] = (1, packet.src)
+			if(packet.is_link_up):
+				self.ip_to_port[packet.src]=(port,packet.latency)
+			else:
+				self.ip_to_port[packet.src]=(port,None) #didn't use a really high number. 
+				
+			update_routing_table(packet,port)
 		elif isinstance(packet, Packet):
 			next_dest = next_hop(packet)
 			self.send(packet, next_dest)
 		else:
 			pass
+
 
   	def update_routing_table (self, packet, port):
 		pass
