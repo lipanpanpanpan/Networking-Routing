@@ -38,13 +38,17 @@ class DVRouter (Entity):
 			pdb.set_trace() #TODO:REMOVE. enter debugging if its not any packet
 			pass
 
-  def update_routing_table (self, packet, port):
+	def update_routing_table (self, packet, port):
 		keys = packet.all_dests()
 		for key in keys:
 			new_dist = get_distance(key) + self.routing_table[packet.src][key][0]
 			current_ip = self.routing_table[packet.src][key]
-			if (packet.src is current_ip[1] and new_dist < current_ip[0]) or (packet.src is not current_ip[1]):
+			if (packet.src is current_ip[1] and new_dist < current_ip[0]
 				current_ip = (new_dist, packet.src)
+			elif packet.src is not current_ip[1]:
+				current_ip = (new_dist, packet.src)
+				self.ip_to_port[packet.src] = port
+		
 
 	def port_for_packet(self, packet):
 		route=self.routing_table[self][packet.dst]
