@@ -16,9 +16,8 @@ class DVRouter (Entity):
 	def handle_rx (self, packet, port):
 		# Add your code here!
 		if isinstance(packet, RoutingUpdate):
-			self.update_routing_table(packet,port)
-			#send_update()
-			self.send_table(port)
+			if self.update_routing_table(packet,port):
+				self.send_table(port)
 
 		elif isinstance(packet, DiscoveryPacket):
 			self.routing_table[self][packet.src] = (1, packet.src)
@@ -44,19 +43,24 @@ class DVRouter (Entity):
 
 	def update_routing_table (self, packet, port):
 		keys = packet.all_dests()
+		changed = False
 		for key in keys:
 			new_dist = packet.get_distance(key) + self.routing_table[self][packet.src][0]
 			if key not in self.routing_table[self]:
 				self.routing_table[self][key] = (new_dist,packet.src)
 				print "NEW", self, "->", key, "=", new_dist
+				changed = True
 			else:
 				current_ip = self.routing_table[self][key]
 				if packet.src is current_ip[1]: # if the sources are the same, then something along the path changed
 					current_ip = (new_dist, packet.src)
 					print "UPDATE", self, "->", key, "=", new_dist
+					changed = True
 				elif packet.src is not current_ip[1] and new_dist < current_ip[0]: # if the sources are different, then this becomes a choice between new path or current path
 					current_ip = (new_dist, packet.src)
 					print "UPDATE", self, "->", key, "=", new_dist
+					changed = True
+			return changed
 
 	def port_for_packet(self, packet):
 		#pdb.set_trace()
