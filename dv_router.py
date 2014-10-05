@@ -31,16 +31,19 @@ class DVRouter (Entity):
 		else:
 			pass
 
-
-  	def update_routing_table (self, packet, port):
-		pass
+  def update_routing_table (self, packet, port):
+		keys = packet.all_dests()
+		for key in keys:
+			new_dist = get_distance(key) + self.routing_table[packet.src][key][0]
+			current_ip = self.routing_table[packet.src][key]
+			if (packet.src is current_ip[1] and new_dist < current_ip[0]) or (packet.src is not current_ip[1]):
+				current_ip = (new_dist, packet.src)
 
 	def next_hop (self, packet):
 		result=self.routing_table[self][packet.dst]
 		if result:
 			return result[1] # this is the port
 		return nil 
-
 
 	def send_update(self):
 		pass
