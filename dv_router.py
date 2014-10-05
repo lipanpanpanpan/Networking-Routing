@@ -59,7 +59,7 @@ class DVRouter (Entity):
 					print "UPDATE", self, "->", key, "=", new_dist
 
 	def port_for_packet(self, packet):
-		pdb.set_trace()
+		#pdb.set_trace()
 		route=self.routing_table[self][packet.dst]
 		port=self.ip_to_port[route[1]][0]
 		return port
