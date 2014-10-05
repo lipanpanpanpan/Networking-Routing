@@ -5,20 +5,28 @@ from sim.basics import *
 Create your distance vector router in this file.
 '''
 class DVRouter (Entity):
-	routing_table = {}
 	def __init__(self):
 		# Add your code here!
-		create(DVRouter, "dv")
-		routing_table[self] = {self, 0}
+		self.routing_table[self] = {self:(0, 0)}
 
 	def handle_rx (self, packet, port):
 		# Add your code here!
 		if isinstance(packet, RoutingUpdate):
-			pass
+      update_routing_table(packet)
+			send_update()
 		elif isinstance(packet, DiscoveryPacket):
-			pass
+			self.routing_table[self][packet.src] = (1, port)
 		elif isinstance(packet, Packet):
-			pass
-		else
+			next_dest = next_hop(packet.dst)
+			self.send(packet, next_dest)
+		else:
 			pass
 
+  def update_routing_table (self, update):
+		pass
+
+	def next_hop (self, dest):
+		return self
+
+	def send_update(self):
+		pass
