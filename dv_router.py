@@ -34,7 +34,7 @@ class DVRouter (Entity):
 			print state, packet.src, " to ", self , " table"
 
 		elif isinstance(packet, Packet):
-			port = port_for_packet(packet)
+			port = self.port_for_packet(packet)
 			self.send(packet, port)
 		else:
 			pdb.set_trace() #TODO:REMOVE. enter debugging if its not any packet
@@ -44,13 +44,18 @@ class DVRouter (Entity):
 	def update_routing_table (self, packet, port):
 		keys = packet.all_dests()
 		for key in keys:
-			new_dist = packet.get_distance(key) + self.routing_table[packet.src][key][0]
-			current_ip = self.routing_table[packet.src][key]
-			if packet.src is current_ip[1]: # if the sources are the same, then something along the path changed
-				current_ip = (new_dist, packet.src)
-			elif packet.src is not current_ip[1] and new_dist < current_ip[0]: # if the sources are different, then this becomes a choice between new path or current path
-				current_ip = (new_dist, packet.src)
-				self.ip_to_port[key] = port #also update the ip_to_port table to reflect the new port that should be used.
+			new_dist = packet.get_distance(key) + self.routing_table[self][packet.src][0]
+			if key not in self.routing_table[self]:
+				self.routing_table[self][key] = new_dist
+				print "NEW", self, "->", key, "=", new_dist
+			else:
+				current_ip = self.routing_table[self][key]
+				if packet.src is current_ip[1]: # if the sources are the same, then something along the path changed
+					current_ip = (new_dist, packet.src)
+					print "UPDATE", self, "->", key, "=", new_dist
+				elif packet.src is not current_ip[1] and new_dist < current_ip[0]: # if the sources are different, then this becomes a choice between new path or current path
+					current_ip = (new_dist, packet.src)
+					print "UPDATE", self, "->", key, "=", new_dist
 
 	def port_for_packet(self, packet):
 		route=self.routing_table[self][packet.dst]
