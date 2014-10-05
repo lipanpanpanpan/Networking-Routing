@@ -18,6 +18,7 @@ class DVRouter (Entity):
 		if isinstance(packet, RoutingUpdate):
 			self.update_routing_table(packet,port)
 			#send_update()
+			self.send_table(port)
 
 		elif isinstance(packet, DiscoveryPacket):
 			self.routing_table[self][packet.src] = (1, packet.src)
@@ -46,7 +47,7 @@ class DVRouter (Entity):
 		for key in keys:
 			new_dist = packet.get_distance(key) + self.routing_table[self][packet.src][0]
 			if key not in self.routing_table[self]:
-				self.routing_table[self][key] = new_dist
+				self.routing_table[self][key] = (new_dist,packet.src)
 				print "NEW", self, "->", key, "=", new_dist
 			else:
 				current_ip = self.routing_table[self][key]
@@ -58,10 +59,17 @@ class DVRouter (Entity):
 					print "UPDATE", self, "->", key, "=", new_dist
 
 	def port_for_packet(self, packet):
+		pdb.set_trace()
 		route=self.routing_table[self][packet.dst]
-		port=self.ip_to_port(route[1])[0]
+		port=self.ip_to_port[route[1]][0]
 		return port
 
+
+	def send_table(self,port):
+		p=RoutingUpdate()
+		for k,v in self.routing_table[self].iteritems():
+			p.add_destination(k,v[0])
+		self.send(p,port,True)
 
 	def send_update(self,dst,distance,port):
 		p=RoutingUpdate()
