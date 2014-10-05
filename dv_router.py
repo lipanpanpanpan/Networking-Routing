@@ -18,6 +18,7 @@ class DVRouter (Entity):
 		if isinstance(packet, RoutingUpdate):
 			self.update_routing_table(packet,port)
 			send_update()
+
 		elif isinstance(packet, DiscoveryPacket):
 			self.routing_table[self][packet.src] = (1, packet.src)
 			state=""
@@ -27,9 +28,9 @@ class DVRouter (Entity):
 			else:
 				state="Removed "
 				self.ip_to_port[packet.src]=(port,None) #didn't use a really high number. 
+				self.clean(packet.src)
 
 			print state, packet.src, " to ", self , " table"
-			self.update_routing_table(packet,port)
 
 		elif isinstance(packet, Packet):
 			port = port_for_packet(packet)
@@ -43,12 +44,11 @@ class DVRouter (Entity):
 		for key in keys:
 			new_dist = get_distance(key) + self.routing_table[packet.src][key][0]
 			current_ip = self.routing_table[packet.src][key]
-			if (packet.src is current_ip[1] and new_dist < current_ip[0]
+			if packet.src is current_ip[1]: # if the sources are the same, then something along the path changed
 				current_ip = (new_dist, packet.src)
-			elif packet.src is not current_ip[1]:
+			elif packet.src is not current_ip[1] and new_dist < current_ip[0]: # if the sources are different, then this becomes a choice between new path or current path
 				current_ip = (new_dist, packet.src)
-				self.ip_to_port[packet.src] = port
-		
+				self.ip_to_port[key] = port #also update the ip_to_port table to reflect the new port that should be used.
 
 	def port_for_packet(self, packet):
 		route=self.routing_table[self][packet.dst]
@@ -56,5 +56,15 @@ class DVRouter (Entity):
 		return port
 
 	def send_update(self):
+
+		pass
+
+	def clean(self, switch):
+		for k,v in self.routing_table[self]:
+			if v[1]==switch:
+				self.routing_table[self][k]=(None,None)
+				self.calculate(self,k)
 		
+
+	def calculate(self,src,dest):
 		pass
