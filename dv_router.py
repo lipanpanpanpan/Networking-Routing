@@ -13,12 +13,13 @@ Create your distance vector router in this file.
 infinity=5
 
 class DVRouter (Entity):
+	debug=False
 	def __init__(self):
 		# Add your code here!
 		self.routing_table= {}
 		self.ip_to_port={}
 		self.routing_table[self] = {self:(0, 0)} #dst->(distance, switch)
-		self.ip_to_port[self] = (None, 0)  #switch->(port number, distance)
+		#self.ip_to_port[self] = (None, 0)  #switch->(port number, distance)
 		self.changed_table = {} #dst->(distance, switch) 
 
 	def handle_rx (self, packet, port):
@@ -60,7 +61,9 @@ class DVRouter (Entity):
 
 	def update_routing_table (self, packet, port):
 		keys = packet.all_dests()
-		pdb.set_trace()
+		if DVRouter.debug:
+			pdb.set_trace()
+
 		if packet.src not in self.routing_table.keys():
 			self.routing_table[packet.src]={}             #create a dictionary if the src isn't there
 		for key in keys:
@@ -68,29 +71,31 @@ class DVRouter (Entity):
 
 		for key in keys: #for each of the sent distances
 			new_dist = packet.get_distance(key) + self.ip_to_port[packet.src][1] #add link distance to packet's advertised distance
-
+			src=packet.src
 			if new_dist>infinity:  #set max distance to infinity
 				new_dist=infinity
+				src=None
+
 
 			if key not in self.routing_table[self] or self.routing_table[self][key][0]==infinity:   #if I didn't know how to get there then this is the best
-				self.routing_table[self][key] = (new_dist,packet.src)
-				self.changed_table[key] = (new_dist, packet.src)
+				self.routing_table[self][key] = (new_dist,src)
+				self.changed_table[key] = (new_dist, src)
 				print "NEW", self, "->", key, "=", new_dist
 			else:
 				r=self.routing_table[self][key]
 				if packet.src is r[1] and r[0]!=new_dist: # if prev. route was through packet.src and distance is different, then need to update
-					self.routing_table[self][key]= (new_dist, packet.src)
+					self.routing_table[self][key]= (new_dist, src)
 					self.routing_table[self][key]=self.calculate(self,key)
 					self.changed_table[key] = self.routing_table[self][key]
 					print "UPDATE", self, "->", key, "=", self.routing_table[self][key][0] 
 				elif (packet.src is not r[1]) and new_dist == r[0]:  #if distances are same, then check if port number is lower. 
 					if self.ip_to_port[packet.src][0]<self.ip_to_port[self.routing_table[self][key][1]][0]:
-						self.routing_table[self][key]=(new_dist, packet.src)
-						self.changed_table[key] = (new_dist, packet.src) 
+						self.routing_table[self][key]=(new_dist, src)
+						self.changed_table[key] = (new_dist, src) 
 						print "UPDATE LOWER KEY", self, "->", key, "=", self.routing_table[self][key][0] 
 				elif packet.src is not r[1] and new_dist < r[0]: # if the sources are different, then this becomes a choice between new path or current path
-					self.routing_table[self][key] = (new_dist, packet.src)
-					self.changed_table[key] = (new_dist,packet.src)
+					self.routing_table[self][key] = (new_dist, src)
+					self.changed_table[key] = (new_dist,src)
 					print "UPDATE", self, "->", key, "=", new_dist
 
 	def print_table(self):
@@ -166,7 +171,7 @@ class DVRouter (Entity):
 	def calculate(self,src,dst):
 		newEntry=(infinity,None)
 		for k,v in self.routing_table.iteritems():   #check each connected component
-			if dst in v.keys():
+			if k!=self and dst in v.keys():
 				new_distance=v[dst][0]+self.ip_to_port[k][1]
 				if new_distance<newEntry[0]:
 					newEntry=(new_distance,k)

@@ -3,6 +3,7 @@
 import sys
 import time
 
+
 _ENABLE_GUI = "--gui" in sys.argv
 
 # If you don't want to see log messages on the console, uncomment the
