@@ -153,6 +153,7 @@ class DVRouter (Entity):
 		for k,v in self.routing_table[self].iteritems():
 			if v[1]==switch:
 				self.routing_table[self][k]=(infinity,None)
+				self.routing_table[self][k]=self.calculate(self,k)
 				p.add_destination(k,self.routing_table[self][k][0])
 		self.send(p,self.ip_to_port[switch][0], flood=True)
 
