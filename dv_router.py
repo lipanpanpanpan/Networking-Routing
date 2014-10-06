@@ -60,16 +60,16 @@ class DVRouter (Entity):
 				print "NEW", self, "->", key, "=", new_dist
 				changed = True
 			else:
-				current_ip = self.routing_table[self][key]
-				if packet.src is current_ip[1]: # if the sources are the same, then something along the path changed
-					current_ip = (new_dist, packet.src)
+				r=self.routing_table[self][key]
+				if packet.src is r[1] and r[0]!=new_dist: # if the sources are the same & changed then update 
+					self.routing_table[self][key]= (new_dist, packet.src)
 					print "UPDATE", self, "->", key, "=", new_dist
 					changed = True
-				elif packet.src is not current_ip[1] and new_dist < current_ip[0]: # if the sources are different, then this becomes a choice between new path or current path
-					current_ip = (new_dist, packet.src)
+				elif packet.src is not r[1] and new_dist < r[0]: # if the sources are different, then this becomes a choice between new path or current path
+					self.routing_table[self][key] = (new_dist, packet.src)
 					print "UPDATE", self, "->", key, "=", new_dist
 					changed = True
-			return changed
+		return changed
 
 	def print_table(self):
 		pp.pprint(self.routing_table)
@@ -84,14 +84,11 @@ class DVRouter (Entity):
 	def send_table(self,port):
 		print "Sending table"
 		pp.pprint(self.routing_table[self])
-
-		print "\n\n\n"
+		print "\n\n"
 
 		p=RoutingUpdate()
-		print "SEND table", self
 		for k,v in self.routing_table[self].iteritems():
 			p.add_destination(k,v[0])
-			print "   ", k, ":", v[0]
 		self.send(p,port,flood=True)
 
 	def send_update(self,dst,distance,port):
