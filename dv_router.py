@@ -1,6 +1,9 @@
 from sim.api import *
 from sim.basics import *
 import pdb
+import pprint
+pp = pprint.PrettyPrinter(indent=4)
+
 
 '''
 Create your distance vector router in this file.
@@ -43,9 +46,14 @@ class DVRouter (Entity):
 
 	def update_routing_table (self, packet, port):
 		keys = packet.all_dests()
+		if packet.src not in self.routing_table.keys():
+			self.routing_table[packet.src]={}
+		for key in keys:
+			self.routing_table[packet.src][key]=(packet.get_distance(key),None)
+
 		changed = False
 		for key in keys:
-			new_dist = packet.get_distance(key) + self.routing_table[self][packet.src][0]
+			new_dist = packet.get_distance(key) + self.ip_to_port[packet.src][1]
 			if key not in self.routing_table[self]:
 				self.routing_table[self][key] = (new_dist,packet.src)
 				print "NEW", self, "->", key, "=", new_dist
@@ -62,6 +70,9 @@ class DVRouter (Entity):
 					changed = True
 			return changed
 
+	def print_table(self):
+		pp.pprint(self.routing_table)
+
 	def port_for_packet(self, packet):
 		#pdb.set_trace()
 		route=self.routing_table[self][packet.dst]
@@ -70,6 +81,11 @@ class DVRouter (Entity):
 
 
 	def send_table(self,port):
+		print "Sending table"
+		pp.pprint(self.routing_table[self])
+
+		print "\n\n\n"
+
 		p=RoutingUpdate()
 		for k,v in self.routing_table[self].iteritems():
 			p.add_destination(k,v[0])
