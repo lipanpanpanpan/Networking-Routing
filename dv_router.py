@@ -77,7 +77,7 @@ class DVRouter (Entity):
 					print "UPDATE", self, "->", key, "=", self.routing_table[self][key][0] 
 					changed = True
 				elif packet.src is not r[1] and new_dist == r[0]:
-					if ip_to_port[packet.src][0]<ip_to_port[self.routing_table[self][key]][0]:
+					if self.ip_to_port[packet.src][0]<self.ip_to_port[self.routing_table[self][key][1]][0]:
 						self.routing_table[self][key]=(new_dist, packet.src)
 						self.changed_table[key] = (new_dist, packet.src) 
 						print "UPDATE LOWER KEY", self, "->", key, "=", self.routing_table[self][key][0] 
