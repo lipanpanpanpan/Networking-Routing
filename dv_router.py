@@ -159,6 +159,8 @@ class DVRouter (Entity):
 	def clean(self, switch):
 		p=RoutingUpdate()
 		if switch in self.routing_table.keys():   #delete the switch from table since its no longer connected
+			if DVRouter.debug:
+				pdb.set_trace()
 			del self.routing_table[switch]
 		for k,v in self.routing_table[self].iteritems():  #for all routes if used deleted switch. set to infinity.
 			if v[1]==switch:
