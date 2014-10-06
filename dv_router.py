@@ -15,13 +15,13 @@ class DVRouter (Entity):
 		self.ip_to_port={}
 		self.routing_table[self] = {self:(0, 0)} #dst->(distance, switch)
 		self.ip_to_port[self] = (None, 0)  #switch->(port number, distance)
-		self.delay = 4
+		self.changed_table = {}
 
 	def handle_rx (self, packet, port):
 		# Add your code here!
 		if isinstance(packet, RoutingUpdate):
 			if self.update_routing_table(packet,port):
-				self.send_table(port)
+				self.send_increments(port)
 
 		elif isinstance(packet, DiscoveryPacket):
 			self.routing_table[self][packet.src] = (packet.latency, packet.src)
@@ -57,16 +57,19 @@ class DVRouter (Entity):
 			new_dist = packet.get_distance(key) + self.ip_to_port[packet.src][1]
 			if key not in self.routing_table[self]:
 				self.routing_table[self][key] = (new_dist,packet.src)
+				self.changed_table[key] = new_dist
 				print "NEW", self, "->", key, "=", new_dist
 				changed = True
 			else:
 				r=self.routing_table[self][key]
 				if packet.src is r[1] and r[0]!=new_dist: # if the sources are the same & changed then update 
 					self.routing_table[self][key]= (new_dist, packet.src)
+					self.changed_table[key] = new_dist
 					print "UPDATE", self, "->", key, "=", new_dist
 					changed = True
 				elif packet.src is not r[1] and new_dist < r[0]: # if the sources are different, then this becomes a choice between new path or current path
 					self.routing_table[self][key] = (new_dist, packet.src)
+					self.changed_table[key] = new_dist
 					print "UPDATE", self, "->", key, "=", new_dist
 					changed = True
 		return changed
@@ -80,6 +83,12 @@ class DVRouter (Entity):
 		port=self.ip_to_port[route[1]][0]
 		return port
 
+	def send_increments(self, port):
+		p = RoutingUpdate()
+		for k,v in self.changed_table.iteritems():
+			p.add_destination(k, v)
+		self.changed_table.clear()
+		self.send(p, port, flood=True)
 
 	def send_table(self,port):
 		print "Sending table"
