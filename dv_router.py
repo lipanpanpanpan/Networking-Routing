@@ -8,6 +8,10 @@ pp = pprint.PrettyPrinter(indent=4)
 '''
 Create your distance vector router in this file.
 '''
+
+
+infinity=1000
+
 class DVRouter (Entity):
 	def __init__(self):
 		# Add your code here!
@@ -32,7 +36,7 @@ class DVRouter (Entity):
 				self.send_update(packet.src,packet.latency,port)
 			else:
 				state="Removed "
-				self.ip_to_port[packet.src]=(port,None) #didn't use a really high number. 
+				self.ip_to_port[packet.src]=(port,infinity)
 				self.clean(packet.src)
 
 			print state, packet.src, " to ", self , " table"
@@ -63,7 +67,8 @@ class DVRouter (Entity):
 				r=self.routing_table[self][key]
 				if packet.src is r[1] and r[0]!=new_dist: # if the sources are the same & changed then update 
 					self.routing_table[self][key]= (new_dist, packet.src)
-					print "UPDATE", self, "->", key, "=", new_dist
+					self.routing_table[self][key]=self.calculate(self,key)
+					print "UPDATE", self, "->", key, "=", self.routing_table[self][key][0] 
 					changed = True
 				elif packet.src is not r[1] and new_dist < r[0]: # if the sources are different, then this becomes a choice between new path or current path
 					self.routing_table[self][key] = (new_dist, packet.src)
@@ -80,16 +85,19 @@ class DVRouter (Entity):
 		port=self.ip_to_port[route[1]][0]
 		return port
 
-
 	def send_table(self,port):
 		print "Sending table"
 		pp.pprint(self.routing_table[self])
 		print "\n\n"
 
-		p=RoutingUpdate()
-		for k,v in self.routing_table[self].iteritems():
-			p.add_destination(k,v[0])
-		self.send(p,port,flood=True)
+		for i in xrange(self.get_port_count()):
+			p=RoutingUpdate()
+			for k,v in self.routing_table[self].iteritems():
+				if v[1]==i:
+					p.add_destination(k,infinity)	
+				else:
+					p.add_destination(k,v[0])
+			self.send(p,port)
 
 	def send_update(self,dst,distance,port):
 		p=RoutingUpdate()
@@ -97,21 +105,21 @@ class DVRouter (Entity):
 		self.send(p,port, flood=True)
 
 	def clean(self, switch):
+		p=RoutingUpdate()
 		del self.routing_table[switch]
-		for k,v in self.routing_table[self]:
+		for k,v in self.routing_table[self].iteritems():
 			if v[1]==switch:
-				self.routing_table[self][k]=(None,None)
-				self.calculate(self,k)
-		
+				self.routing_table[self][k]=(infinity,None)
+				p.add_destination(k,self.routing_table[self][k][0])
+		self.send(p,self.ip_to_port[switch][0], flood=True)
+
 	def calculate(self,src,dst):
-		print "calculate ", src," ", dst
-		return
-		newEntry=(10000000000000,None)
-		for k,v in self.routing_table:   #check each connected component
+		newEntry=(infinity,None)
+		for k,v in self.routing_table.iteritems():   #check each connected component
 			if dst in v.keys():
 				new_distance=v[dst][0]+self.ip_to_port[k][1]
 				if new_distance<newEntry[0]:
 					newEntry=(new_distance,k)
-		if newEntry[1]==None:
-			return None		
+
+		print "calculate ", src," ", dst, " : ", newEntry
 		return newEntry
