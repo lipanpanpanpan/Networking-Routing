@@ -19,13 +19,12 @@ class DVRouter (Entity):
 		self.ip_to_port={}
 		self.routing_table[self] = {self:(0, 0)} #dst->(distance, switch)
 		self.ip_to_port[self] = (None, 0)  #switch->(port number, distance)
-		self.delay = 4
 
 	def handle_rx (self, packet, port):
 		# Add your code here!
 		if isinstance(packet, RoutingUpdate):
 			if self.update_routing_table(packet,port):
-				self.send_table(port)
+				self.send_table()
 
 		elif isinstance(packet, DiscoveryPacket):
 			self.routing_table[self][packet.src] = (packet.latency, packet.src)
@@ -34,6 +33,7 @@ class DVRouter (Entity):
 				state="Added "
 				self.ip_to_port[packet.src]=(port,packet.latency)
 				self.send_update(packet.src,packet.latency,port)
+				self.send_table()
 			else:
 				state="Removed "
 				self.ip_to_port[packet.src]=(port,infinity)
@@ -47,6 +47,8 @@ class DVRouter (Entity):
 		else:
 			pdb.set_trace() #TODO:REMOVE. enter debugging if its not any packet
 			pass
+
+		#pdb.set_trace()
 
 
 	def update_routing_table (self, packet, port):
@@ -81,23 +83,28 @@ class DVRouter (Entity):
 
 	def port_for_packet(self, packet):
 		#pdb.set_trace()
-		route=self.routing_table[self][packet.dst]
-		port=self.ip_to_port[route[1]][0]
-		return port
+		t=self.routing_table[self]
+		if packet.dst in t.keys():
+			route=t[packet.dst]
+			if route[1] in self.ip_to_port.keys():
+				return self.ip_to_port[route[1]][0]
+		return None 
 
-	def send_table(self,port):
-		print "Sending table"
-		pp.pprint(self.routing_table[self])
+	def send_table(self):
 		print "\n\n"
-
-		for i in xrange(self.get_port_count()):
+		for ip,port in self.ip_to_port.iteritems():
+			d={}
 			p=RoutingUpdate()
 			for k,v in self.routing_table[self].iteritems():
-				if v[1]==i:
+				if v[1]==ip and k!=self:
+					d[k]=infinity
 					p.add_destination(k,infinity)	
 				else:
+					d[k]=v[0]
 					p.add_destination(k,v[0])
-			self.send(p,port)
+			print "Sending table from ", self, " to: ",ip
+			pp.pprint(d)
+			self.send(p,port[0])
 
 	def send_update(self,dst,distance,port):
 		p=RoutingUpdate()
