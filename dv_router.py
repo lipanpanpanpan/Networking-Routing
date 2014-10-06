@@ -15,6 +15,7 @@ class DVRouter (Entity):
 		self.ip_to_port={}
 		self.routing_table[self] = {self:(0, 0)} #dst->(distance, switch)
 		self.ip_to_port[self] = (None, 0)  #switch->(port number, distance)
+		self.delay = 4
 
 	def handle_rx (self, packet, port):
 		# Add your code here!
@@ -23,7 +24,7 @@ class DVRouter (Entity):
 				self.send_table(port)
 
 		elif isinstance(packet, DiscoveryPacket):
-			self.routing_table[self][packet.src] = (1, packet.src)
+			self.routing_table[self][packet.src] = (packet.latency, packet.src)
 			state=""
 			if(packet.is_link_up):
 				state="Added "
@@ -87,14 +88,16 @@ class DVRouter (Entity):
 		print "\n\n\n"
 
 		p=RoutingUpdate()
+		print "SEND table", self
 		for k,v in self.routing_table[self].iteritems():
 			p.add_destination(k,v[0])
-		self.send(p,port,True)
+			print "   ", k, ":", v[0]
+		self.send(p,port,flood=True)
 
 	def send_update(self,dst,distance,port):
 		p=RoutingUpdate()
 		p.add_destination(dst, distance)
-		self.send(p,port, True)
+		self.send(p,port, flood=True)
 
 	def clean(self, switch):
 		del self.routing_table[switch]
