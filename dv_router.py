@@ -63,7 +63,6 @@ class DVRouter (Entity):
 		keys = packet.all_dests()
 		if DVRouter.debug:
 			pdb.set_trace()
-
 		if packet.src not in self.routing_table.keys():
 			self.routing_table[packet.src]={}             #create a dictionary if the src isn't there
 		for key in keys:
@@ -75,7 +74,6 @@ class DVRouter (Entity):
 			if new_dist>infinity:  #set max distance to infinity
 				new_dist=infinity
 				src=None
-
 
 			if key not in self.routing_table[self] or self.routing_table[self][key][0]==infinity:   #if I didn't know how to get there then this is the best
 				self.routing_table[self][key] = (new_dist,src)
@@ -123,18 +121,19 @@ class DVRouter (Entity):
 
 		print "\n\n"
 		for ip,port in self.ip_to_port.iteritems():
-			d={}
-			p=RoutingUpdate()
-			for k,v in self.changed_table.iteritems(): #added
-				if v[1]==ip and k!=self:
-					d[k]=infinity
-					p.add_destination(k,infinity)	
-				else:
-					d[k]=v[0]
-					p.add_destination(k,v[0])
-			print "Sending table from ", self, " to: ",ip
-			pp.pprint(d)
-			self.send(p,port[0])
+			if ip is not self:
+				d={}
+				p=RoutingUpdate()
+				for k,v in self.changed_table.iteritems(): #added
+					if v[1]==ip and k!=self:
+						d[k]=infinity
+						p.add_destination(k,infinity)	
+					else:
+						d[k]=v[0]
+						p.add_destination(k,v[0])
+				print "Sending table from ", self, " to: ",ip
+				pp.pprint(d)
+				self.send(p,port[0])
 		self.changed_table.clear() #added
 
 	def send_entire_table(self,src):
