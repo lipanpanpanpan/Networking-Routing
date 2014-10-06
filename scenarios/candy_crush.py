@@ -37,7 +37,8 @@ def create (switch_type = Hub, host_type = BasicHost):
 		topo.link(s1, s4)
 		topo.link(s4, s5)
 		topo.link(s5, s2)
-		time.sleep(5)
+
+def unlink_all():
 		topo.unlink(s1, h1a)
 		topo.unlink(s1, h1b)
 		topo.unlink(s2, h2a)
@@ -49,8 +50,8 @@ def create (switch_type = Hub, host_type = BasicHost):
 		topo.unlink(s1, s4)
 		topo.unlink(s4, s5)
 		topo.unlink(s5, s2)
-		time.sleep(5)
 
+def link_all():
 		topo.link(s1, h1a)
 		topo.link(s1, h1b)
 		topo.link(s2, h2a)
