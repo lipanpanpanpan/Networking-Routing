@@ -75,7 +75,7 @@ class DVRouter (Entity):
 				new_dist=infinity
 				src=None
 
-			if key not in self.routing_table[self] or self.routing_table[self][key][0]==infinity:   #if I didn't know how to get there then this is the best
+			if key not in self.routing_table[self] or (self.routing_table[self][key][0]==infinity and new_dist!=infinity):   #if I didn't know how to get there then this is the best
 				self.routing_table[self][key] = (new_dist,src)
 				self.changed_table[key] = (new_dist, src)
 				print "NEW", self, "->", key, "=", new_dist
@@ -86,7 +86,7 @@ class DVRouter (Entity):
 					self.routing_table[self][key]=self.calculate(self,key)
 					self.changed_table[key] = self.routing_table[self][key]
 					print "UPDATE", self, "->", key, "=", self.routing_table[self][key][0] 
-				elif (packet.src is not r[1]) and new_dist == r[0]:  #if distances are same, then check if port number is lower. 
+				elif (packet.src is not r[1]) and r[1] is not None and new_dist == r[0]:  #if distances are same, then check if port number is lower. 
 					if self.ip_to_port[packet.src][0]<self.ip_to_port[self.routing_table[self][key][1]][0]:
 						self.routing_table[self][key]=(new_dist, src)
 						self.changed_table[key] = (new_dist, src) 
@@ -121,7 +121,7 @@ class DVRouter (Entity):
 
 		print "\n\n"
 		for ip,port in self.ip_to_port.iteritems():
-			if ip is not self:
+			if ip is not self and port[1]!=infinity:
 				d={}
 				p=RoutingUpdate()
 				for k,v in self.changed_table.iteritems(): #added
