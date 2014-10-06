@@ -63,10 +63,13 @@ class DVRouter (Entity):
 			else:
 				r=self.routing_table[self][key]
 				if packet.src is r[1] and r[0]!=new_dist: # if the sources are the same & changed then update 
-					self.routing_table[self][key]= (new_dist, packet.src)
-					self.changed_table[key] = new_dist
-					print "UPDATE", self, "->", key, "=", new_dist
-					changed = True
+					dif_dists = r[0] != new_dist
+					same_dists_lower_port = port_for_packet(packet) > ip_to_port[packet.src][0]
+					if dif_dists or same_dists_lower_port:
+						self.routing_table[self][key]= (new_dist, packet.src)
+						self.changed_table[key] = new_dist
+						print "UPDATE", self, "->", key, "=", new_dist
+						changed = True
 				elif packet.src is not r[1] and new_dist < r[0]: # if the sources are different, then this becomes a choice between new path or current path
 					self.routing_table[self][key] = (new_dist, packet.src)
 					self.changed_table[key] = new_dist
